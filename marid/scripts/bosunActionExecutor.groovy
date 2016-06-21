@@ -37,7 +37,7 @@ try {
         urlPath = "/api/action"
         contentMap.put("Type", "forceClose")
         contentMap.put("User", "OpsGenie")
-        contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
+        contentMap.put("Message", String.valueOf("Closed by ${alert.username} via OpsGenie"))
         contentMap.put("Ids", [ alert.alias.toInteger() ])
         contentMap.put("Notify", true)
     } else if (action == "Delete")
@@ -45,7 +45,7 @@ try {
         urlPath = "/api/action"
         contentMap.put("Type", "purge")
         contentMap.put("User", "OpsGenie")
-        contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
+        contentMap.put("Message", String.valueOf("Deleted by ${alert.username} via OpsGenie"))
         contentMap.put("Ids", [ alert.alias.toInteger() ])
         contentMap.put("Notify", true)
     }
