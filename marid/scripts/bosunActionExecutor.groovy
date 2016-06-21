@@ -11,56 +11,51 @@ LOG_PREFIX = "[${action}]:";
 logger.warn("${LOG_PREFIX} Will execute action for alertId ${alert.alertId}");
 
 CONF_PREFIX = "bosun.";
-alertFromOpsgenie = opsgenie.getAlert(alertId: alert.alertId)
-if (alertFromOpsgenie.size() > 0) {
-    def contentMap = [:]
-    def urlPath = ""
+def contentMap = [:]
+def urlPath = ""
 
-    boolean discardAction = false;
+boolean discardAction = false;
 
-    def apiUrl = _conf("api_url", false);
+def apiUrl = _conf("api_url", false);
 
-    if (!apiUrl) {
-        logger.warn("Ignoring action ${action}, because ${CONF_PREFIX}api_url does not exist in conf file, alert: ${alert.message}");
-        return;
+if (!apiUrl) {
+    logger.warn("Ignoring action ${action}, because ${CONF_PREFIX}api_url does not exist in conf file, alert: ${alert.message}");
+    return;
+}
+
+HTTP_CLIENT = createHttpClient();
+try {
+    if (action == "Acknowledge") {
+        urlPath = "/api/action"
+        contentMap.put("Type", "ack")
+        contentMap.put("User", "OpsGenie")
+        contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
+        contentMap.put("Ids", [ alert.alias.toInteger() ])
+        contentMap.put("Notify", true)
+    } else if (action == "Close")
+    {
+        urlPath = "/api/action"
+        contentMap.put("Type", "forceClose")
+        contentMap.put("User", "OpsGenie")
+        contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
+        contentMap.put("Ids", [ alert.alias.toInteger() ])
+        contentMap.put("Notify", true)
+    } else if (action == "Delete")
+    {
+        urlPath = "/api/action"
+        contentMap.put("Type", "purge")
+        contentMap.put("User", "OpsGenie")
+        contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
+        contentMap.put("Ids", [ alert.alias.toInteger() ])
+        contentMap.put("Notify", true)
     }
 
-    HTTP_CLIENT = createHttpClient();
-    try {
-        if (action == "Acknowledge") {
-            urlPath = "/api/action"
-            contentMap.put("Type", "ack")
-            contentMap.put("User", "OpsGenie")
-            contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
-            contentMap.put("Ids", [ alertFromOpsgenie.alias.toInteger() ])
-            contentMap.put("Notify", true)
-        } else if (action == "Close")
-        {
-            urlPath = "/api/action"
-            contentMap.put("Type", "forceClose")
-            contentMap.put("User", "OpsGenie")
-            contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
-            contentMap.put("Ids", [ alertFromOpsgenie.alias.toInteger() ])
-            contentMap.put("Notify", true)
-        } else if (action == "Delete")
-        {
-            urlPath = "/api/action"
-            contentMap.put("Type", "purge")
-            contentMap.put("User", "OpsGenie")
-            contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
-            contentMap.put("Ids", [ alertFromOpsgenie.alias.toInteger() ])
-            contentMap.put("Notify", true)
-        }
-
-        if (!discardAction) {
-            postToBosunApi(urlPath, contentMap);
-        }
+    if (!discardAction) {
+        postToBosunApi(urlPath, contentMap);
     }
-    finally {
-        HTTP_CLIENT.close()
-    }
-} else {
-    logger.warn("${LOG_PREFIX} Alert with id [${alert.alertId}] does not exist in OpsGenie. It is probably deleted.")
+}
+finally {
+    HTTP_CLIENT.close()
 }
 
 def _conf(confKey, boolean isMandatory){
