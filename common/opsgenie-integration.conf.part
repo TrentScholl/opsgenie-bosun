@@ -4,7 +4,5 @@ bosun.http.timeout=30000
 
 ############################## BOSUN INTEGRATION - ALERT ACTION CONFIGURATION ######################
 actions.Acknowledge.script=bosunActionExecutor.groovy
-actions.AddNote.script=bosunActionExecutor.groovy
-actions.TakeOwnership.script=bosunActionExecutor.groovy
-actions.AssignOwnership.script=bosunActionExecutor.groovy
-actions.Create.script=bosunActionExecutor.groovy
+actions.Close.script=bosunActionExecutor.groovy
+actions.Delete.script=bosunActionExecutor.groovy
