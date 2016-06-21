@@ -1,5 +1,5 @@
 ######################################## BOSUN CONFIGURATION #######################################
-bosun.api_url=https://localhost:8070
+bosun.api_url=http://localhost:8070
 bosun.http.timeout=30000
 
 ############################## BOSUN INTEGRATION - ALERT ACTION CONFIGURATION ######################
