@@ -42,6 +42,14 @@ if (alertFromOpsgenie.size() > 0) {
             contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
             contentMap.put("Ids", [ alertFromOpsgenie.alias.toInteger() ])
             contentMap.put("Notify", true)
+        } else if (action == "Delete")
+        {
+            urlPath = "/api/action"
+            contentMap.put("Type", "purge")
+            contentMap.put("User", "OpsGenie")
+            contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
+            contentMap.put("Ids", [ alertFromOpsgenie.alias.toInteger() ])
+            contentMap.put("Notify", true)
         }
 
         if (!discardAction) {
