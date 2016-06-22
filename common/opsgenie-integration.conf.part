@@ -3,6 +3,7 @@ bosun.api_url=http://localhost:8070
 bosun.http.timeout=30000
 
 ############################## BOSUN INTEGRATION - ALERT ACTION CONFIGURATION ######################
+actions.Create.script=bosunActionExecutor.groovy
 actions.Acknowledge.script=bosunActionExecutor.groovy
 actions.Close.script=bosunActionExecutor.groovy
 actions.Delete.script=bosunActionExecutor.groovy
