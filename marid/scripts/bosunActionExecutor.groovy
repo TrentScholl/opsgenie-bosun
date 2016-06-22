@@ -7,61 +7,80 @@ import org.apache.http.HttpHeaders
 
 import java.text.SimpleDateFormat
 
-LOG_PREFIX = "[${action}]:";
-logger.warn("${LOG_PREFIX} Will execute action for alertId ${alert.alertId}");
+if (alert.source == "Bosun")
+{
+    LOG_PREFIX = "[${action}]:";
+    logger.warn("${LOG_PREFIX} Will execute action for alertId ${alert.alertId}");
 
-CONF_PREFIX = "bosun.";
-def contentMap = [:]
-def urlPath = ""
+    CONF_PREFIX = "bosun.";
+    def contentMap = [:]
+    def urlPath = ""
 
-boolean discardAction = false;
+    boolean discardAction = false;
 
-def apiUrl = _conf("api_url", false);
+    def apiUrl = _conf("api_url", false);
 
-if (!apiUrl) {
-    logger.warn("Ignoring action ${action}, because ${CONF_PREFIX}api_url does not exist in conf file, alert: ${alert.message}");
-    return;
-}
-
-HTTP_CLIENT = createHttpClient();
-try {
-    if (action == "Acknowledge") {
-        urlPath = "/api/action"
-        contentMap.put("Type", "ack")
-        contentMap.put("User", "OpsGenie")
-        contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
-        contentMap.put("Ids", [ alert.alias.toInteger() ])
-        contentMap.put("Notify", true)
-    } else if (action == "Close")
-    {
-        urlPath = "/api/action"
-        contentMap.put("Type", "forceClose")
-        contentMap.put("User", "OpsGenie")
-        contentMap.put("Message", String.valueOf("Closed by ${alert.username} via OpsGenie"))
-        contentMap.put("Ids", [ alert.alias.toInteger() ])
-        contentMap.put("Notify", true)
-    } else if (action == "Delete")
-    {
-        urlPath = "/api/action"
-        contentMap.put("Type", "purge")
-        contentMap.put("User", "OpsGenie")
-        contentMap.put("Message", String.valueOf("Deleted by ${alert.username} via OpsGenie"))
-        contentMap.put("Ids", [ alert.alias.toInteger() ])
-        contentMap.put("Notify", true)
+    if (!apiUrl) {
+        logger.warn("Ignoring action ${action}, because ${CONF_PREFIX}api_url does not exist in conf file, alert: ${alert.message}");
+        return;
     }
 
-    if (!discardAction) {
-        postToBosunApi(urlPath, contentMap);
+    def (alias, severity) = alert.alias.tokenize('-')
+
+    HTTP_CLIENT = createHttpClient();
+    try {
+        if (action == "Create") {
+            if (severity == "critical")
+            {
+                alertFromOpsgenie = opsgenie.getAlert(alias: alias + "-warning");
+                if (alertFromOpsgenie.size() > 0) {
+                    opsgenie.closeAlert(alertId: alertFromOpsgenie.alertId)
+                }
+            }
+            discardAction = true;
+        } else if (action == "Acknowledge") {
+            urlPath = "/api/action"
+            contentMap.put("Type", "ack")
+            contentMap.put("User", "OpsGenie")
+            contentMap.put("Message", String.valueOf("Acknowledged by ${alert.username} via OpsGenie"))
+            contentMap.put("Ids", [ alias.toInteger() ])
+            contentMap.put("Notify", true)
+        } else if (action == "Close") {
+            if (severity == "warning")
+            {
+                alertFromOpsgenie = opsgenie.getAlert(alias: alias + "-critical");
+                if (alertFromOpsgenie.size() > 0) {
+                    discardAction = true;
+                }
+            }
+            urlPath = "/api/action"
+            contentMap.put("Type", "forceClose")
+            contentMap.put("User", "OpsGenie")
+            contentMap.put("Message", String.valueOf("Closed by ${alert.username} via OpsGenie"))
+            contentMap.put("Ids", [ alias.toInteger() ])
+            contentMap.put("Notify", true)
+        } else if (action == "Delete") {
+            urlPath = "/api/action"
+            contentMap.put("Type", "purge")
+            contentMap.put("User", "OpsGenie")
+            contentMap.put("Message", String.valueOf("Deleted by ${alert.username} via OpsGenie"))
+            contentMap.put("Ids", [ alias.toInteger() ])
+            contentMap.put("Notify", true)
+        }
+
+        if (!discardAction) {
+            postToBosunApi(urlPath, contentMap);
+        }
+    }
+    finally {
+        HTTP_CLIENT.close()
     }
 }
-finally {
-    HTTP_CLIENT.close()
-}
 
-def _conf(confKey, boolean isMandatory){
+def _conf(confKey, boolean isMandatory) {
     def confVal = conf[CONF_PREFIX+confKey]
     logger.debug ("confVal ${CONF_PREFIX+confKey} from file is ${confVal}");
-    if(isMandatory && confVal == null){
+    if(isMandatory && confVal == null) {
         def errorMessage = "${LOG_PREFIX} Skipping action, Mandatory Conf item ${CONF_PREFIX+confKey} is missing. Check your marid conf file.";
         logger.warn(errorMessage);
         throw new Exception(errorMessage);
@@ -73,8 +92,7 @@ def createHttpClient() {
     def timeout = _conf("http.timeout", false);
     if(timeout == null){
         timeout = 30000;
-    }
-    else{
+    } else {
         timeout = timeout.toInteger();
     }
 
